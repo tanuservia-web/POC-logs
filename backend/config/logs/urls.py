@@ -7,5 +7,7 @@ urlpatterns = [
     path('<int:log_id>/analyze/', AnalyzeView.as_view()),
     path('<int:log_id>/analysis/', AnalysisView.as_view()),
 
+    path("errors/", ErrorLogsView.as_view()),
+
 
 ]

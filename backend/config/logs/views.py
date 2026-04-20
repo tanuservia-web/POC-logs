@@ -18,7 +18,9 @@ class LogListView(APIView):
 class UploadLogView(APIView):
     def post(self, request):
         file = request.FILES['file']
-        log = LogFile.objects.create(filename=file.name, file=file)
+
+        # ✅ Only metadata stored
+        log = LogFile.objects.create(filename=file.name)
 
         entries = parse_log_file(file)
 
@@ -27,7 +29,7 @@ class UploadLogView(APIView):
                 log_file=log,
                 timestamp=e["timestamp"],
                 level=e["level"],
-                category=e["category"],  # NEW FIELD
+                category=e["category"],
                 message=e["message"]
             )
             for e in entries
@@ -37,26 +39,8 @@ class UploadLogView(APIView):
 
         return Response({
             "log_id": log.id,
-            "total_entries": len(parsed_objects)
+            "stored_errors": len(parsed_objects)
         })
-
-
-# class UploadLogView(APIView):
-#     def post(self, request):
-#         file = request.FILES['file']
-#         log = LogFile.objects.create(filename=file.name, file=file)
-
-#         entries = parse_log_file(file)
-
-#         for e in entries:
-#             ParsedLogEntry.objects.create(
-#                 log_file=log,
-#                 timestamp=e["timestamp"],
-#                 level=e["level"],
-#                 message=e["message"]
-#             )
-
-#         return Response({"log_id": log.id})
 
 
 class LogEntriesView(APIView):
@@ -93,32 +77,6 @@ class AnalyzeView(APIView):
 
         return Response(AnalysisResultSerializer(analysis).data)
 
-# class AnalyzeView(APIView):
-#     def post(self, request, log_id):
-#         entries = ParsedLogEntry.objects.filter(log_file_id=log_id)
-
-#         if not entries.exists():
-#             return Response({"error": "No logs found"}, status=status.HTTP_404_NOT_FOUND)
-
-#         # Avoid duplicate analysis
-#         if AnalysisResult.objects.filter(log_file_id=log_id).exists():
-#             existing = AnalysisResult.objects.get(log_file_id=log_id)
-#             return Response(
-#                 AnalysisResultSerializer(existing).data,
-#                 status=status.HTTP_200_OK
-#             )
-
-#         result = analyze_logs(entries)
-
-#         analysis = AnalysisResult.objects.create(
-#             log_file_id=log_id,
-#             summary=result["summary"],
-#             root_causes=result["root_causes"],
-#             suggested_fixes=result["suggested_fixes"]
-#         )
-
-#         return Response(AnalysisResultSerializer(analysis).data)
-
 
 class AnalysisView(APIView):
     def get(self, request, log_id):
@@ -132,34 +90,19 @@ class AnalysisView(APIView):
             )
 
 
-# class AnalysisView(APIView):
-#     def get(self, request, log_id):
-#         try:
-#             analysis = AnalysisResult.objects.get(log_file_id=log_id)
-#             return Response(AnalysisResultSerializer(analysis).data)
-#         except AnalysisResult.DoesNotExist:
-#             return Response(
-#                 {"error": "Analysis not found. Please run analysis first."},
-#                 status=404
-#             )
+class ErrorLogsView(APIView):
+    def get(self, request):
+        level = request.GET.get("level")
+        category = request.GET.get("category")
 
-# class AnalyzeView(APIView):
-#     def post(self, request, log_id):
-#         entries = ParsedLogEntry.objects.filter(log_file_id=log_id).values()
+        logs = ParsedLogEntry.objects.all()
 
-#         result = analyze_logs(entries)
+        if level:
+            logs = logs.filter(level=level)
 
-#         analysis = AnalysisResult.objects.create(
-#             log_file_id=log_id,
-#             summary=result["summary"],
-#             root_causes=result["root_causes"],
-#             suggested_fixes=result["suggested_fixes"]
-#         )
+        if category:
+            logs = logs.filter(category=category)
 
-#         return Response(AnalysisResultSerializer(analysis).data)
+        logs = logs.order_by("-id")
 
-
-# class AnalysisView(APIView):
-#     def get(self, request, log_id):
-#         analysis = AnalysisResult.objects.get(log_file_id=log_id)
-#         return Response(AnalysisResultSerializer(analysis).data)
+        return Response(ParsedLogEntrySerializer(logs, many=True).data)

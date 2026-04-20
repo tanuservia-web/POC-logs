@@ -63,12 +63,16 @@ def parse_log_file(file):
         timestamp = extract_timestamp(line)
         level = detect_level(line)
 
-        # fallback: detect error keywords
+        # fallback detection
         if level == "INFO":
             if "error" in line.lower() or "failed" in line.lower():
                 level = "ERROR"
             elif "warn" in line.lower():
                 level = "WARNING"
+
+        # 🚨 ONLY STORE ERROR + CRITICAL
+        if level not in ["ERROR", "CRITICAL"]:
+            continue
 
         category = detect_category(line)
 
@@ -79,35 +83,5 @@ def parse_log_file(file):
             "message": line
         })
 
-    print("✅ Total parsed:", len(entries))
+    print("✅ Stored only critical logs:", len(entries))
     return entries
-
-
-# import re
-
-
-# def parse_log_file(file):
-#     entries = []
-
-#     for line in file:
-#         line = line.decode("utf-8").strip()
-
-#         if not line:
-#             continue
-
-#         level = "INFO"  # default
-
-#         # Detect error patterns
-#         if "error" in line.lower() or "failed" in line.lower():
-#             level = "ERROR"
-#         elif "warn" in line.lower():
-#             level = "WARN"
-
-#         entries.append({
-#             "timestamp": None,
-#             "level": level,
-#             "message": line
-#         })
-
-#     print("✅ Total parsed:", len(entries))
-#     return entries
