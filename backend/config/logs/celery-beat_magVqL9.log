@@ -1,0 +1,24 @@
+[2025-09-19 12:30:54,401: INFO/MainProcess] beat: Starting...
+[2025-09-20 04:00:00,154: INFO/MainProcess] Scheduler: Sending due task celery.backend_cleanup (celery.backend_cleanup)
+[2025-09-21 04:00:00,145: INFO/MainProcess] Scheduler: Sending due task celery.backend_cleanup (celery.backend_cleanup)
+[2025-09-22 04:00:00,139: INFO/MainProcess] Scheduler: Sending due task celery.backend_cleanup (celery.backend_cleanup)
+[2025-09-22 04:51:19,181: INFO/MainProcess] beat: Starting...
+[2025-09-23 04:00:00,106: INFO/MainProcess] Scheduler: Sending due task celery.backend_cleanup (celery.backend_cleanup)
+[2025-09-24 04:00:00,070: INFO/MainProcess] Scheduler: Sending due task celery.backend_cleanup (celery.backend_cleanup)
+[2025-09-25 04:00:00,220: INFO/MainProcess] Scheduler: Sending due task celery.backend_cleanup (celery.backend_cleanup)
+[2025-09-25 04:50:56,011: INFO/MainProcess] beat: Starting...
+[2025-09-25 04:55:27,649: INFO/MainProcess] DatabaseScheduler: Schedule changed.
+[2025-09-25 07:06:10,268: INFO/MainProcess] DatabaseScheduler: Schedule changed.
+[2026-03-05 03:11:41,610: INFO/MainProcess] Scheduler: Sending due task sync-firestore-every-5-minutes (accounts.tasks.sync_data_from_firestore)
+[2026-03-05 03:16:41,682: INFO/MainProcess] Scheduler: Sending due task sync-firestore-every-5-minutes (accounts.tasks.sync_data_from_firestore)
+[2026-03-05 03:21:41,759: INFO/MainProcess] Scheduler: Sending due task sync-firestore-every-5-minutes (accounts.tasks.sync_data_from_firestore)
+[2026-03-05 03:26:41,835: INFO/MainProcess] Scheduler: Sending due task sync-firestore-every-5-minutes (accounts.tasks.sync_data_from_firestore)
+[2026-03-05 03:31:41,916: INFO/MainProcess] Scheduler: Sending due task sync-firestore-every-5-minutes 
+ (accounts.tasks.sync_data_from_firestore)
+[2026-03-05 03:51:42,294: INFO/MainProcess] Scheduler: Sending due task sync-firestore-every-5-minutes (accounts.tasks.sync_data_from_firestore)
+[2026-03-05 03:56:42,374: INFO/MainProcess] Scheduler: Sending due task sync-firestore-every-5-minutes (accounts.tasks.sync_data_from_firestore)
+[2026-03-05 04:00:00,435: INFO/MainProcess] Scheduler: Sending due task celery.backend_cleanup (celery.backend_cleanup)
+[2026-03-05 04:01:42,451: INFO/MainProcess] Scheduler: Sending due task sync-firestore-every-5-minutes (accounts.tasks.sync_data_from_firestore)
+[2025-09-25 07:11:08,658: INFO/MainProcess] Scheduler: Sending due task sync-firestore-every-5-minutes (accounts.tasks.sync_data_from_firestore)
+[2025-09-25 07:16:08,667: INFO/MainProcess] Scheduler: Sending due task sync-firestore-every-5-minutes (accounts.tasks.sync_data_from_firestore)
+[2025-09-25 07:16:08,667: INFO/MainProcess] Scheduler: Sending due task sync-firestore-every-5-minutes (accounts.tasks.sync_data_from_firestore)
