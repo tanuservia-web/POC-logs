@@ -7,6 +7,11 @@ from .models import LogFile, ParsedLogEntry, AnalysisResult
 from .serializers import *
 from .parser import parse_log_file
 from .ai_service import analyze_logs
+from rest_framework.pagination import PageNumberPagination
+
+
+class LogPagination(PageNumberPagination):
+    page_size = 50
 
 
 class LogListView(APIView):
@@ -30,7 +35,7 @@ class UploadLogView(APIView):
                 timestamp=e["timestamp"],
                 level=e["level"],
                 category=e["category"],
-                message=e["message"]
+                message=e["message"][:500]
             )
             for e in entries
         ]
@@ -92,17 +97,20 @@ class AnalysisView(APIView):
 
 class ErrorLogsView(APIView):
     def get(self, request):
+        logs = ParsedLogEntry.objects.all().order_by("-id")
+
         level = request.GET.get("level")
         category = request.GET.get("category")
 
-        logs = ParsedLogEntry.objects.all()
-
         if level:
-            logs = logs.filter(level=level)
+            logs = logs.filter(level__iexact=level)
 
         if category:
-            logs = logs.filter(category=category)
+            logs = logs.filter(category__iexact=category)
 
-        logs = logs.order_by("-id")
+        paginator = LogPagination()
+        result_page = paginator.paginate_queryset(logs, request)
 
-        return Response(ParsedLogEntrySerializer(logs, many=True).data)
+        return paginator.get_paginated_response(
+            ParsedLogEntrySerializer(result_page, many=True).data
+        )

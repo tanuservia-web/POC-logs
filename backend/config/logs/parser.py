@@ -16,9 +16,20 @@ CATEGORY_KEYWORDS = {
 
 
 def detect_level(line):
-    for level in LOG_LEVELS:
-        if level.lower() in line.lower():
-            return level
+    line_lower = line.lower()
+
+    # 🔴 CRITICAL (highest priority)
+    if "fatal error" in line_lower or "uncaught" in line_lower:
+        return "CRITICAL"
+
+    # 🔴 ERROR
+    if "php:error" in line_lower or "error" in line_lower or "failed" in line_lower:
+        return "ERROR"
+
+    # 🟠 WARNING
+    if "warn" in line_lower:
+        return "WARNING"
+
     return "INFO"
 
 
@@ -50,6 +61,7 @@ def extract_timestamp(line):
 
 def parse_log_file(file):
     entries = []
+    current_entry = ""
 
     for line in file:
         try:
@@ -60,28 +72,32 @@ def parse_log_file(file):
         if not line:
             continue
 
-        timestamp = extract_timestamp(line)
-        level = detect_level(line)
+        # New log starts
+        if "[" in line and "]" in line:
+            if current_entry:
+                process_entry(current_entry, entries)
+            current_entry = line
+        else:
+            current_entry += " " + line
 
-        # fallback detection
-        if level == "INFO":
-            if "error" in line.lower() or "failed" in line.lower():
-                level = "ERROR"
-            elif "warn" in line.lower():
-                level = "WARNING"
+    if current_entry:
+        process_entry(current_entry, entries)
 
-        # 🚨 ONLY STORE ERROR + CRITICAL
-        if level not in ["ERROR", "CRITICAL"]:
-            continue
+    return entries
 
-        category = detect_category(line)
 
-        entries.append({
-            "timestamp": timestamp,
-            "level": level,
-            "category": category,
-            "message": line
-        })
+def process_entry(text, entries):
+    level = detect_level(text)
 
-    print("✅ Stored only critical logs:", len(entries))
+    if level not in ["ERROR", "CRITICAL"]:
+        return
+
+    entries.append({
+        "timestamp": extract_timestamp(text),
+        "level": level,
+        "category": detect_category(text),
+        "message": text
+    })
+
+    print("✅ Stored:", len(entries))
     return entries
