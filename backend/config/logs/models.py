@@ -3,6 +3,16 @@ from django.db import models
 
 class LogFile(models.Model):
     filename = models.CharField(max_length=255)
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("UPLOADING", "Uploading"),
+            ("PROCESSING", "Processing"),
+            ("COMPLETED", "Completed"),
+            ("FAILED", "Failed"),
+        ],
+        default="UPLOADING"
+    )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
@@ -16,6 +26,17 @@ class ParsedLogEntry(models.Model):
     message = models.TextField()
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    hash = models.CharField(max_length=64, db_index=True)
+
+    class Meta:
+        unique_together = ("log_file", "hash")
+        indexes = [
+            models.Index(fields=["level"]),
+            models.Index(fields=["category"]),
+            models.Index(fields=["log_file"]),
+            models.Index(fields=["hash"]),
+        ]
 
 
 class AnalysisResult(models.Model):

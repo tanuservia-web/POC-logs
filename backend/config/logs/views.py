@@ -8,6 +8,8 @@ from .serializers import *
 from .parser import parse_log_file
 from .ai_service import analyze_logs
 from rest_framework.pagination import PageNumberPagination
+import threading
+from logs.services.log_processor import process_log_file
 
 
 class LogPagination(PageNumberPagination):
@@ -22,29 +24,35 @@ class LogListView(APIView):
 
 class UploadLogView(APIView):
     def post(self, request):
-        file = request.FILES['file']
+        file = request.FILES.get("file")
 
-        # ✅ Only metadata stored
-        log = LogFile.objects.create(filename=file.name)
+        # ✅ Empty file validation
+        if not file:
+            return Response({"error": "No file provided"}, status=400)
 
-        entries = parse_log_file(file)
+        # ✅ File size validation
+        MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+        if file.size > MAX_FILE_SIZE:
+            return Response({"error": "File too large (max 5MB)"}, status=400)
 
-        parsed_objects = [
-            ParsedLogEntry(
-                log_file=log,
-                timestamp=e["timestamp"],
-                level=e["level"],
-                category=e["category"],
-                message=e["message"][:500]
-            )
-            for e in entries
-        ]
+        if not file:
+            return Response({"error": "No file provided"}, status=400)
 
-        ParsedLogEntry.objects.bulk_create(parsed_objects)
+        log = LogFile.objects.create(
+            filename=file.name,
+            status="PROCESSING"
+        )
+
+        file_data = file.read()
+
+        threading.Thread(
+            target=process_log_file,
+            args=(file_data, log.id)
+        ).start()
 
         return Response({
             "log_id": log.id,
-            "stored_errors": len(parsed_objects)
+            "status": "PROCESSING"
         })
 
 
@@ -101,6 +109,10 @@ class ErrorLogsView(APIView):
 
         level = request.GET.get("level")
         category = request.GET.get("category")
+        limit = request.GET.get("limit")
+
+        if limit:
+            logs = logs[:int(limit)]
 
         if level:
             logs = logs.filter(level__iexact=level)
@@ -114,3 +126,15 @@ class ErrorLogsView(APIView):
         return paginator.get_paginated_response(
             ParsedLogEntrySerializer(result_page, many=True).data
         )
+
+
+class ErrorSummaryView(APIView):
+    def get(self, request):
+        summary = (
+            ParsedLogEntry.objects
+            .values("message")
+            .annotate(count=Count("id"))
+            .order_by("-count")[:10]
+        )
+
+        return Response(summary)

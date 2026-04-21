@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+import hashlib
 
 LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -59,11 +60,10 @@ def extract_timestamp(line):
     return None
 
 
-def parse_log_file(file):
+def parse_log_file(lines):
     entries = []
-    current_entry = ""
 
-    for line in file:
+    for line in lines:
         try:
             line = line.decode("utf-8").strip()
         except:
@@ -72,16 +72,27 @@ def parse_log_file(file):
         if not line:
             continue
 
-        # New log starts
-        if "[" in line and "]" in line:
-            if current_entry:
-                process_entry(current_entry, entries)
-            current_entry = line
-        else:
-            current_entry += " " + line
+        timestamp = extract_timestamp(line)
+        level = detect_level(line)
 
-    if current_entry:
-        process_entry(current_entry, entries)
+        if level == "INFO":
+            if "error" in line.lower():
+                level = "ERROR"
+            elif "warn" in line.lower():
+                level = "WARNING"
+
+        category = detect_category(line)
+
+        # ✅ normalize + hash
+        hash_value = generate_hash(line)
+
+        entries.append({
+            "timestamp": timestamp,
+            "level": level,
+            "category": category,
+            "message": line,
+            "hash": hash_value   # 🔥 NEW
+        })
 
     return entries
 
@@ -101,3 +112,20 @@ def process_entry(text, entries):
 
     print("✅ Stored:", len(entries))
     return entries
+
+
+def normalize_message(message):
+    message = message.lower()
+
+    # remove numbers, ids, timestamps (basic cleanup)
+    message = re.sub(r'\d+', '', message)
+
+    # remove extra spaces
+    message = re.sub(r'\s+', ' ', message).strip()
+
+    return message
+
+
+def generate_hash(message):
+    normalized = normalize_message(message)
+    return hashlib.md5(normalized.encode()).hexdigest()
