@@ -26,15 +26,6 @@ class UploadLogView(APIView):
     def post(self, request):
         file = request.FILES.get("file")
 
-        # ✅ Empty file validation
-        if not file:
-            return Response({"error": "No file provided"}, status=400)
-
-        # ✅ File size validation
-        MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
-        if file.size > MAX_FILE_SIZE:
-            return Response({"error": "File too large (max 5MB)"}, status=400)
-
         if not file:
             return Response({"error": "No file provided"}, status=400)
 
@@ -43,11 +34,10 @@ class UploadLogView(APIView):
             status="PROCESSING"
         )
 
-        file_data = file.read()
-
+        # ✅ Pass file directly (streaming)
         threading.Thread(
             target=process_log_file,
-            args=(file_data, log.id)
+            args=(file, log.id)
         ).start()
 
         return Response({
@@ -60,6 +50,16 @@ class LogEntriesView(APIView):
     def get(self, request, log_id):
         entries = ParsedLogEntry.objects.filter(log_file_id=log_id)
         return Response(ParsedLogEntrySerializer(entries, many=True).data)
+
+
+class LogStatusView(APIView):
+    def get(self, request, log_id):
+        log = LogFile.objects.get(id=log_id)
+
+        return Response({
+            "id": log.id,
+            "status": log.status
+        })
 
 
 class AnalyzeView(APIView):
