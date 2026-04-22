@@ -1,25 +1,22 @@
 import traceback
 from logs.models import LogFile, ParsedLogEntry
-from logs.parser import parse_log_file  # adjust if different
+from logs.parser import parse_single_line
 
 
-import traceback
-from logs.models import LogFile, ParsedLogEntry
-from logs.parser import parse_log_file
-
-
-def process_log_file(file, log_id):
+def process_log_file(file_data, log_id):
     log = LogFile.objects.get(id=log_id)
 
     try:
+        lines = file_data.splitlines()
+        total_lines = len(lines)
+
+        log.total_lines = total_lines
+        log.save(update_fields=["total_lines"])
+
         unique_entries = {}
-        count = 0
-        MAX_LINES = 100000  # safety limit
+        processed = 0
 
-        for raw_line in file:
-            if count > MAX_LINES:
-                break
-
+        for raw_line in lines:
             try:
                 line = raw_line.decode("utf-8").strip()
             except:
@@ -28,9 +25,9 @@ def process_log_file(file, log_id):
             if not line:
                 continue
 
-            # 👉 reuse your parser logic
-            entry = parse_single_line(line)  # create this helper
+            entry = parse_single_line(line)
 
+            # ✅ only ERROR & CRITICAL
             if entry["level"] not in ["ERROR", "CRITICAL"]:
                 continue
 
@@ -39,8 +36,15 @@ def process_log_file(file, log_id):
             if key not in unique_entries:
                 unique_entries[key] = entry
 
-            count += 1
+            processed += 1
 
+            # ✅ update progress
+            if processed % 100 == 0:
+                log.processed_lines = processed
+                log.progress = int((processed / total_lines) * 100)
+                log.save(update_fields=["processed_lines", "progress"])
+
+        # ✅ save unique entries
         ParsedLogEntry.objects.bulk_create([
             ParsedLogEntry(
                 log_file_id=log_id,
@@ -54,8 +58,12 @@ def process_log_file(file, log_id):
         ])
 
         log.status = "COMPLETED"
+        log.progress = 100
+        log.processed_lines = total_lines
         log.save()
 
     except Exception as e:
+        print("❌ ERROR:", e)
+
         log.status = "FAILED"
         log.save()

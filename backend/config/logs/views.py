@@ -34,10 +34,11 @@ class UploadLogView(APIView):
             status="PROCESSING"
         )
 
-        # ✅ Pass file directly (streaming)
+        file_data = file.read()
+
         threading.Thread(
             target=process_log_file,
-            args=(file, log.id)
+            args=(file_data, log.id)
         ).start()
 
         return Response({
@@ -57,8 +58,8 @@ class LogStatusView(APIView):
         log = LogFile.objects.get(id=log_id)
 
         return Response({
-            "id": log.id,
-            "status": log.status
+            "status": log.status,
+            "progress": getattr(log, "progress", 0)
         })
 
 

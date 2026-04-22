@@ -114,18 +114,38 @@ def process_entry(text, entries):
     return entries
 
 
-def normalize_message(message):
-    message = message.lower()
+def normalize_message(msg):
+    msg = msg.lower()
 
-    # remove numbers, ids, timestamps (basic cleanup)
-    message = re.sub(r'\d+', '', message)
+    # remove numbers, ids, timestamps → helps deduplication
+    msg = re.sub(r'\d+', '', msg)
+    msg = re.sub(r'0x[0-9a-f]+', '', msg)
 
-    # remove extra spaces
-    message = re.sub(r'\s+', ' ', message).strip()
-
-    return message
+    return msg.strip()
 
 
 def generate_hash(message):
     normalized = normalize_message(message)
     return hashlib.md5(normalized.encode()).hexdigest()
+
+
+def parse_single_line(line):
+    timestamp = extract_timestamp(line)
+    level = detect_level(line)
+
+    # fallback detection
+    if level == "INFO":
+        if "error" in line.lower() or "failed" in line.lower():
+            level = "ERROR"
+        elif "warn" in line.lower():
+            level = "WARNING"
+
+    category = detect_category(line)
+
+    return {
+        "timestamp": timestamp,
+        "level": level,
+        "category": category,
+        "message": line,
+        "hash": generate_hash(line)  # ✅ IMPORTANT for deduplication
+    }

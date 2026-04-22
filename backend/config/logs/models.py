@@ -3,16 +3,12 @@ from django.db import models
 
 class LogFile(models.Model):
     filename = models.CharField(max_length=255)
-    status = models.CharField(
-        max_length=20,
-        choices=[
-            ("UPLOADING", "Uploading"),
-            ("PROCESSING", "Processing"),
-            ("COMPLETED", "Completed"),
-            ("FAILED", "Failed"),
-        ],
-        default="UPLOADING"
-    )
+    status = models.CharField(max_length=20, default="PROCESSING")
+
+    progress = models.IntegerField(default=0)   # ✅ NEW
+    total_lines = models.IntegerField(default=0)  # ✅ NEW
+    processed_lines = models.IntegerField(default=0)  # ✅ NEW
+
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
 
