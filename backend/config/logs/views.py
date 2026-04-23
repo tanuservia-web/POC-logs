@@ -49,8 +49,15 @@ class UploadLogView(APIView):
 
 class LogEntriesView(APIView):
     def get(self, request, log_id):
-        entries = ParsedLogEntry.objects.filter(log_file_id=log_id)
-        return Response(ParsedLogEntrySerializer(entries, many=True).data)
+        logs = ParsedLogEntry.objects.filter(
+            log_file_id=log_id).order_by("-id")
+
+        paginator = LogPagination()
+        result_page = paginator.paginate_queryset(logs, request)
+
+        return paginator.get_paginated_response(
+            ParsedLogEntrySerializer(result_page, many=True).data
+        )
 
 
 class LogStatusView(APIView):
